@@ -10,16 +10,26 @@ import NoServerConnection from './NoServerConnection'
 import AddFirstTorrent from './AddFirstTorrent'
 import { SearchFieldWrapper } from './style'
 
+import OfflineToolbar from 'components/OfflineToolbar'
+import { useOfflineFilter } from 'components/OfflineToolbar/useOfflineFilter'
+import { filterTorrents } from 'utils/offline'
+
 export default function TorrentList({ isOffline, isLoading, sortABC, torrents, sortCategory }) {
   const { t } = useTranslation()
   const [search, setSearch] = useState('')
+  // The summary and the status filter are built over ALL torrents (not only the selected category)
+  const { summary, hasOffline, filter, setFilter } = useOfflineFilter(torrents)
+
   const sortedTorrents = useMemo(() => {
     if (!torrents) return []
     const query = search.trim().toLowerCase()
-    const filtered = torrents.filter(
-      torrent =>
-        (sortCategory === 'all' || torrent.category === sortCategory) &&
-        (!query || [torrent.title, torrent.name].some(name => (name || '').toLowerCase().includes(query))),
+    const filtered = filterTorrents(
+      torrents.filter(
+        torrent =>
+          (sortCategory === 'all' || torrent.category === sortCategory) &&
+          (!query || [torrent.title, torrent.name].some(name => (name || '').toLowerCase().includes(query))),
+      ),
+      filter,
     )
 
     if (sortABC) {
@@ -33,7 +43,7 @@ export default function TorrentList({ isOffline, isLoading, sortABC, torrents, s
       if (tsA !== tsB) return tsB - tsA
       return a.hash.localeCompare(b.hash)
     })
-  }, [torrents, sortCategory, sortABC, search])
+  }, [torrents, sortCategory, sortABC, search, filter])
 
   if (isLoading || isOffline || !torrents?.length) {
     return (
@@ -64,6 +74,11 @@ export default function TorrentList({ isOffline, isLoading, sortABC, torrents, s
           fullWidth
         />
       </SearchFieldWrapper>
+      {hasOffline && (
+        <div style={{ gridColumn: '1 / -1' }}>
+          <OfflineToolbar torrents={torrents} summary={summary} filter={filter} onFilterChange={setFilter} />
+        </div>
+      )}
       {sortedTorrents.map(torrent => (
         <TorrentCard key={torrent.hash} torrent={torrent} />
       ))}
