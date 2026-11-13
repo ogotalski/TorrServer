@@ -5,7 +5,8 @@ on:
     branches:
       - master
     tags:
-      - "**"
+      # Upstream's releases only: this fork's "nothingon-*" tags are release-linux.yml's.
+      - "MatriX.*"
 
 concurrency:
   group: docker-build-${{ github.ref }}
