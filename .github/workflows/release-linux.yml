@@ -10,6 +10,10 @@ on:
 permissions:
   contents: write
 
+env:
+  # The web UI's webpack needs the old OpenSSL hashes (as in ts_build.yml).
+  NODE_OPTIONS: --openssl-legacy-provider
+
 jobs:
   release:
     runs-on: ubuntu-22.04

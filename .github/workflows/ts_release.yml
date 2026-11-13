@@ -3,7 +3,8 @@ name: Build and Release
 on:
   push:
     tags:
-      - "*"
+      # Upstream's releases only: this fork's "nothingon-*" tags are release-linux.yml's.
+      - "MatriX.*"
 
 jobs:
   build:
