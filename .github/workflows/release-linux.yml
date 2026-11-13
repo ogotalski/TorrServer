@@ -1,0 +1,60 @@
+name: Release (Linux amd64)
+
+# The server's binary for the NothingOn server, with the web UI: built, tested and published as a
+# GitHub release when a "nothingon-*" tag is pushed. NothingOnServer's "Deploy TorrServer" workflow
+# installs it from there.
+on:
+  push:
+    tags: ["nothingon-*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: server/go.mod
+
+      - name: Version
+        run: |
+          VER="$(sed -n 's/.*var Version = "\([^"]*\)".*/\1/p' server/version/version.go | head -1)"
+          echo "VERSION=${VER}-${GITHUB_REF_NAME#nothingon-}" >> "$GITHUB_ENV"
+
+      - name: Install Swag
+        run: go install github.com/swaggo/swag/cmd/swag@latest
+
+      - name: Build web and docs
+        run: |
+          go run gen_web.go
+          cd server && ~/go/bin/swag init -g web/server.go --parseInternal --parseDepth 5
+
+      - name: Test
+        working-directory: server
+        run: go test ./...
+
+      - name: Build
+        run: |
+          mkdir -p dist
+          cd server
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+            -ldflags="-s -w -checklinkname=0 -X server/version.Version=${VERSION}" \
+            -tags=nosqlite -trimpath -o ../dist/TorrServer-linux-amd64 ./cmd
+          cd ../dist
+          if readelf -d TorrServer-linux-amd64 | grep -q NEEDED; then
+            echo "Expected a static binary" >&2
+            exit 1
+          fi
+          sha256sum TorrServer-linux-amd64 > TorrServer-linux-amd64.sha256
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/* \
+            --title "TorrServer ${VERSION}" \
+            --notes "TorrServer ${VERSION} for the NothingOn server: YouROK/TorrServer with offline downloads (whole torrents into a folder on the server, served from disk)."
