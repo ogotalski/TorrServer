@@ -5,14 +5,13 @@ import CircularProgress from '@material-ui/core/CircularProgress'
 import TextField from '@material-ui/core/TextField'
 import SearchIcon from '@material-ui/icons/Search'
 import { TorrentListWrapper, CenteredGrid } from 'components/App/style'
+import OfflineToolbar from 'components/OfflineToolbar'
+import { useOfflineFilter } from 'components/OfflineToolbar/useOfflineFilter'
+import { filterTorrents } from 'utils/offline'
 
 import NoServerConnection from './NoServerConnection'
 import AddFirstTorrent from './AddFirstTorrent'
 import { SearchFieldWrapper } from './style'
-
-import OfflineToolbar from 'components/OfflineToolbar'
-import { useOfflineFilter } from 'components/OfflineToolbar/useOfflineFilter'
-import { filterTorrents } from 'utils/offline'
 
 export default function TorrentList({ isOffline, isLoading, sortABC, torrents, sortCategory }) {
   const { t } = useTranslation()

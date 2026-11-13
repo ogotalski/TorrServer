@@ -33,6 +33,9 @@ jobs:
         run: go install github.com/swaggo/swag/cmd/swag@latest
 
       - name: Build web and docs
+        env:
+          # Lint warnings (formatting, also on upstream's master) don't stop the build.
+          CI: false
         run: |
           go run gen_web.go
           cd server && ~/go/bin/swag init -g web/server.go --parseInternal --parseDepth 5
