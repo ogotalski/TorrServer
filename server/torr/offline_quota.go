@@ -236,8 +236,10 @@ func currentOfflineQuota() offlineQuota {
 	if q.maxSize < 0 {
 		q.maxSize = 0
 	}
-	if q.minFree < 0 {
-		q.minFree = 0
+	// The disk is often shared (a seedbox with other services): offline downloads leave
+	// at least the floor free, whatever the reserve set.
+	if q.minFree < offlineMinFreeFloor {
+		q.minFree = offlineMinFreeFloor
 	}
 	return q
 }

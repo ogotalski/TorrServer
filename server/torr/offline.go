@@ -104,6 +104,10 @@ func checkOfflineDir(dir string) error {
 // logs the server keeps writing while the download runs.
 const offlineSpaceMargin = 32 << 20
 
+// offlineMinFreeFloor is the free space offline downloads always leave on their disk, even
+// with no reserve set (OfflineMinFreeSpace): a full disk stops everything else on it.
+const offlineMinFreeFloor = 5 << 30
+
 // checkOfflineSpace refuses to start (or resume) an offline download when the
 // filesystem that hosts dir cannot visibly hold the data still missing. It is
 // a preflight check, not a guarantee: if the free space cannot be determined

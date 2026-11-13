@@ -8,6 +8,7 @@ import (
 	"github.com/anacrolix/torrent/metainfo"
 
 	sets "server/settings"
+	"server/torr/offline"
 )
 
 func withQuota(t *testing.T, maxSize, minFree int64, rotation bool) {
@@ -20,8 +21,39 @@ func withQuota(t *testing.T, maxSize, minFree int64, rotation bool) {
 func TestCurrentOfflineQuotaClampsNegative(t *testing.T) {
 	withQuota(t, -5, -7, true)
 	q := currentOfflineQuota()
-	if q.maxSize != 0 || q.minFree != 0 || !q.rotation {
+	if q.maxSize != 0 || q.minFree != offlineMinFreeFloor || !q.rotation {
 		t.Fatalf("unexpected quota %+v", q)
+	}
+}
+
+func TestCurrentOfflineQuotaKeepsAFreeSpaceFloor(t *testing.T) {
+	// Offline downloads never fill the disk: without a reserve set, the floor stays
+	// free all the same; a larger reserve is kept as it is.
+	withQuota(t, 0, 0, false)
+	if q := currentOfflineQuota(); q.minFree != offlineMinFreeFloor {
+		t.Fatalf("no reserve set: want the %d floor, got %d", int64(offlineMinFreeFloor), q.minFree)
+	}
+	withQuota(t, 0, 20<<30, false)
+	if q := currentOfflineQuota(); q.minFree != 20<<30 {
+		t.Fatalf("a larger reserve is kept: got %d", q.minFree)
+	}
+}
+
+func TestEnsureOfflineRoomRefusesADownloadThatWouldEatTheFloor(t *testing.T) {
+	withQuota(t, 0, 0, false)
+	dir := t.TempDir()
+	free, err := offline.FreeSpace(dir)
+	if err != nil {
+		t.Skip("free space unknown here:", err)
+	}
+	if free < offlineMinFreeFloor {
+		t.Skip("this disk already has less than the floor free")
+	}
+	// Fits on the disk, but would leave less than the floor free.
+	remaining := free - offlineMinFreeFloor/2
+	err = ensureOfflineRoom(offlineRoom{dir: dir, total: remaining, remaining: remaining})
+	if err == nil || !strings.Contains(err.Error(), "free space reserve") {
+		t.Fatalf("want the floor enforced, got %v", err)
 	}
 }
 
