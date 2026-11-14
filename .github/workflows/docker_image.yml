@@ -2,10 +2,9 @@ name: Release Docker multi arch
 
 on:
   push:
-    branches:
-      - master
+    # Upstream's releases only: this fork publishes no Docker images (no Docker Hub login), and
+    # its "nothingon-*" tags are release-linux.yml's.
     tags:
-      # Upstream's releases only: this fork's "nothingon-*" tags are release-linux.yml's.
       - "MatriX.*"
 
 concurrency:
